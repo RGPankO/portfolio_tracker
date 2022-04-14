@@ -35,3 +35,4 @@ Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 
 - [ ] Proper usage of React router for Restriced routes
 - [ ] Offload logic for taking prices to the backend
+- [ ] Build proper CI/CD pipeline
