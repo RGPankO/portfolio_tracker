@@ -30,3 +30,8 @@ or
 
 Runs the app in the development mode.\
 Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+
+## Things to be finished:
+
+- [ ] Proper usage of React router for Restriced routes
+- [ ] Offload logic for taking prices to the backend
