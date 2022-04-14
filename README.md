@@ -4,6 +4,12 @@ Portfolio tracker app
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Installation & project info
+
+Project requires node version of `16.14.2`
+
+Backend endpoint base url is defined in `.env` file.
+
 ## Available Scripts
 
 Build the project:
@@ -24,6 +30,3 @@ or
 
 Runs the app in the development mode.\
 Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
-
-The page will reload when you make changes.\
-You may also see any lint errors in the console.

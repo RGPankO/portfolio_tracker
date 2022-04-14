@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import LoginPage from './LoginPage';
-import { auth, db } from '../helpers/firebase-config';
+import { auth } from '../helpers/firebase-config';
 import { onAuthStateChanged } from 'firebase/auth';
-import { collection, getDocs } from 'firebase/firestore';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 
@@ -18,14 +17,11 @@ const Home = () => {
   const [gettingUser, setGettingUser] = useState(true);
 
   const [formattedResults, setFormattedResults] = useState([]);
+  const [transactionData, setTransactionData] = useState([]);
   const [totalValueUSD, setTotalValueUSD] = useState([]);
   const [chartData, setChartData] = useState(null);
 
-  const usersCollectionRef = collection(db, 'users');
-  const coinsCollectionRef = collection(db, 'coins');
-
   onAuthStateChanged(auth, currentUser => {
-    console.log('user is changed', currentUser);
     setUser(currentUser);
     setGettingUser(false);
   });
@@ -33,14 +29,43 @@ const Home = () => {
   const fetchData = async () => {
     setIsFetching(true);
 
-    const dbCoinsData = await getDocs(coinsCollectionRef);
-    const dbUserData = await getDocs(usersCollectionRef);
+    let coinsData;
+    let userData;
+    let transactionData;
 
-    const coinsData = dbCoinsData.docs.map(item => item.data());
-    const currentUserData = dbUserData.docs.find(item => item.id === user.uid);
+    // Get coins data
+    try {
+      const request = await axios(`${process.env.REACT_APP_BACKEND_API}/coins/data`);
+      const { data } = request;
+      coinsData = data;
+    } catch (e) {
+      console.error(e);
+    }
+
+    // Get user data
+    try {
+      const request = await axios(`${process.env.REACT_APP_BACKEND_API}/user/data`);
+      const { data } = request;
+      userData = data;
+    } catch (e) {
+      console.error(e);
+    }
+
+    // Get user data
+    try {
+      const request = await axios(`${process.env.REACT_APP_BACKEND_API}/transaction/data`);
+      console.log('request', request);
+      const { data } = request;
+      transactionData = data;
+    } catch (e) {
+      console.error(e);
+    }
+
+    const currentUserData = userData.filter(item => item.userId === user.uid);
+    const currentUserTransactionData = transactionData.filter(item => item.userId === user.uid);
 
     if (currentUserData) {
-      const userPortfolio = currentUserData.data().portfolio;
+      const userPortfolio = currentUserData;
       // setUserData(userPortfolio);
 
       const userCoinsIds = userPortfolio.reduce((acc, item) => {
@@ -113,6 +138,7 @@ const Home = () => {
       setChartData(rawChartData);
       setFormattedResults(formattedData);
       setTotalValueUSD(totalValueUSD);
+      setTransactionData(currentUserTransactionData);
     }
 
     setIsFetching(false);
@@ -166,8 +192,23 @@ const Home = () => {
     </tr>
   ));
 
+  const renderTransactionRows = transactionData.map((item, index) => (
+    <tr key={index}>
+      <td>
+        <div className="d-flex align-items-center">
+          <img width="20" src={`/coin-icons/${item.icon}`} alt="" />
+          <span className="ms-3">{item.symbol}</span>
+        </div>
+      </td>
+      <td className="text-end text-numeric">{item.type}</td>
+      <td className="text-end text-numeric">{item.amount}</td>
+      <td className="text-end text-numeric">${numeral(item.currentPriceUSD).format('0,0.00')}</td>
+    </tr>
+  ));
+
   const showTable = user && formattedResults.length > 0;
   const showChart = user && chartData && showTable;
+  const showTransactionTable = user && transactionData.length > 0;
 
   return gettingUser ? (
     <div className="container py-5 py-lg-7 d-flex justify-content-center">
@@ -228,6 +269,26 @@ const Home = () => {
 
         <div className="col-md-4">{showChart ? <Doughnut data={chartData} /> : null}</div>
       </div>
+
+      <h2 className="mt-5 mt-lg-7">My transactions</h2>
+
+      {showTransactionTable ? (
+        <table className="table mt-5">
+          <thead>
+            <tr>
+              <th>Asset symbol</th>
+              <th className="text-end">Type</th>
+              <th className="text-end">Amount</th>
+              <th className="text-end">Current price</th>
+            </tr>
+          </thead>
+          <tbody>{renderTransactionRows}</tbody>
+        </table>
+      ) : (
+        <div className="alert alert-warning mt-5" role="alert">
+          No transactions for this user
+        </div>
+      )}
     </div>
   ) : (
     <LoginPage auth={auth} setGettingUser={setGettingUser} />
